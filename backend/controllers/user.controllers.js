@@ -16,22 +16,46 @@ export const getCurrentUser=async (req,res) => {
     }
 }
 
-export const updateUserLocation=async (req,res) => {
-    try {
-        const {lat,lon}=req.body
-        const user=await User.findByIdAndUpdate(req.userId,{
-            location:{
-                type:'Point',
-                coordinates:[lon,lat]
-            }
-        },{new:true})
-         if(!user){
-               return res.status(400).json({message:"user is not found"})
-        }
+// export const updateUserLocation=async (req,res) => {
+//     try {
+//         const {lat,lon}=req.body
+//         const user=await User.findByIdAndUpdate(req.userId,{
+//             location:{
+//                 type:'Point',
+//                 coordinates:[lon,lat]
+//             }
+//         },{new:true})
+//          if(!user){
+//                return res.status(400).json({message:"user is not found"})
+//         }
         
-        return res.status(200).json({message:'location updated'})
+//         return res.status(200).json({message:'location updated'})
+//     } catch (error) {
+//            return res.status(500).json({message:`update location user error ${error}`})
+//     }
+// }
+export const updateUserLocation = async (req, res) => {
+    try {
+        const { lat, lon, lng } = req.body; // Add lng just in case
+        const longitude = lon || lng; // Use whichever one is provided
+
+        if (!lat || !longitude) {
+            return res.status(400).json({ message: "lat and lon/lng are required" });
+        }
+
+        const user = await User.findByIdAndUpdate(req.userId, {
+            location: {
+                type: 'Point',
+                coordinates: [longitude, lat] // [Longitude, Latitude] is correct for GeoJSON
+            }
+        }, { new: true });
+
+        if (!user) {
+            return res.status(400).json({ message: "user is not found" });
+        }
+
+        return res.status(200).json({ message: 'location updated' });
     } catch (error) {
-           return res.status(500).json({message:`update location user error ${error}`})
+        return res.status(500).json({ message: `update location error: ${error.message}` });
     }
 }
-
