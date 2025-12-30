@@ -36,26 +36,31 @@ export const getCurrentUser=async (req,res) => {
 // }
 export const updateUserLocation = async (req, res) => {
     try {
-        const { lat, lon, lng } = req.body; // Add lng just in case
-        const longitude = lon || lng; // Use whichever one is provided
+        // Accept both lon and lng from the request body
+        const { lat, lon, lng } = req.body;
+        const longitude = lon || lng; 
 
+        // If data is still missing, return a clear message
         if (!lat || !longitude) {
-            return res.status(400).json({ message: "lat and lon/lng are required" });
+            return res.status(400).json({ 
+                message: "Missing coordinates. Expected 'lat' and 'lon' or 'lng'." 
+            });
         }
 
         const user = await User.findByIdAndUpdate(req.userId, {
             location: {
                 type: 'Point',
-                coordinates: [longitude, lat] // [Longitude, Latitude] is correct for GeoJSON
+                coordinates: [longitude, lat] // [Longitude, Latitude] is the GeoJSON standard
             }
         }, { new: true });
 
         if (!user) {
-            return res.status(400).json({ message: "user is not found" });
+            return res.status(404).json({ message: "User not found" });
         }
-
-        return res.status(200).json({ message: 'location updated' });
+        
+        return res.status(200).json({ message: 'Location updated successfully' });
     } catch (error) {
-        return res.status(500).json({ message: `update location error: ${error.message}` });
+        console.error("Location Update Error:", error);
+        return res.status(500).json({ message: `Server error: ${error.message}` });
     }
 }
