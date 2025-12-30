@@ -36,27 +36,30 @@ export const sendOtpMail = async (to, otp) => {
         const transporter = nodemailer.createTransport({
             host: "smtp.gmail.com",
             port: 465,
-            secure: true, 
+            secure: true, // true for 465, false for other ports
             auth: {
                 user: process.env.EMAIL,
-                pass: process.env.PASS, // Ensure NO SPACES in Render dashboard
+                pass: process.env.PASS, // 16-character code with NO SPACES
             },
+            // Add a timeout to prevent the 502 Gateway crash
+            connectionTimeout: 10000, 
         });
 
         await transporter.sendMail({
             from: `"Hostel Hungry" <${process.env.EMAIL}>`,
             to: to,
             subject: "Reset Your Password - Hostel Hungry",
-            html: `Your OTP is <b>${otp}</b>`
+            html: `<p>Your OTP is <b>${otp}</b>. Valid for 5 minutes.</p>`
         });
-
-        console.log("OTP sent to:", to);
+        
+        return true;
     } catch (error) {
         console.error("Nodemailer Error:", error.message);
-        throw error; // This allows your controller to return a 500 error properly
+        // Throwing the error allows your controller to catch it and send a 500 
+        // instead of letting the whole server crash (502)
+        throw new Error("Email service failed");
     }
 };
-
 export const sendDeliveryOtpMail = async (user, otp) => {
     try {
         const transporter = nodemailer.createTransport({
