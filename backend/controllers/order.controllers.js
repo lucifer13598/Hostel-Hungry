@@ -532,22 +532,24 @@ export const sendDeliveryOtp = async (req, res) => {
     shopOrder.otpExpires = Date.now() + 5 * 60 * 1000
     await order.save()
 
-    // 5️⃣ Send OTP email SAFELY (never crash API)
-    // try {
-    //   await sendDeliveryOtpMail(order.user, otp)
-    // } catch (mailError) {
-    //   console.error("Delivery Mail Error:", mailError.message)
-    //   // email failed, but OTP still valid
-    // }
-      // 5️⃣ Send OTP via SMS SAFELY
-try {
-  await sendDeliveryOtpSms(order.user, otp)
-  console.log("DELIVERY OTP SMS SENT:", otp, "to", order.user.mobile)
-} catch (smsError) {
-  console.error("Delivery SMS Error:", smsError.message)
-  // SMS failed, but OTP still valid
-}
+    // 5️⃣ Send OTP email safely (optional)
+    try {
+      await sendDeliveryOtpMail(order.user, otp)
+    } catch (mailError) {
+      console.error("Delivery Mail Error:", mailError.message)
+    }
 
+    // 6️⃣ Send OTP via SMS safely
+    if (!order.user.mobile) {
+      console.warn("User mobile missing, skipping SMS OTP")
+    } else {
+      try {
+        await sendDeliveryOtpSms(order.user, otp)
+        console.log("DELIVERY OTP SMS SENT:", otp, "to", order.user.mobile)
+      } catch (smsError) {
+        console.error("Delivery SMS Error:", smsError.message)
+      }
+    }
 
     return res.status(200).json({
       message: "OTP sent successfully"
