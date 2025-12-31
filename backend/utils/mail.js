@@ -1,23 +1,24 @@
 import nodemailer from "nodemailer";
-import axios from "axios";
+import dotenv from "dotenv";
+dotenv.config();
 
-/* =======================
-   EMAIL (Password Reset)
-   ======================= */
-
+// Function to create the transporter (Brevo SMTP)
 const getTransporter = () => {
   return nodemailer.createTransport({
     host: "smtp-relay.brevo.com",
     port: 587,
-    secure: false,
+    secure: false, // Port 587 uses STARTTLS
     auth: {
-      user: process.env.EMAIL,
-      pass: process.env.PASS,
+      user: process.env.EMAIL, // Your verified Brevo sender email
+      pass: process.env.PASS,  // Your Brevo SMTP Key
     },
     connectionTimeout: 10000,
   });
 };
 
+/* =======================
+   PASSWORD RESET OTP EMAIL
+   ======================= */
 export const sendOtpMail = async (to, otp) => {
   try {
     const transporter = getTransporter();
@@ -27,53 +28,51 @@ export const sendOtpMail = async (to, otp) => {
       to,
       subject: "Reset Your Password - Hostel Hungry",
       html: `
-        <h2>Hostel Hungry</h2>
-        <p>Your OTP is:</p>
-        <h1>${otp}</h1>
-        <p>Valid for 5 minutes</p>
-      `,
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px;">
+          <h2 style="color: #ff4d2d; text-align: center;">Hostel Hungry</h2>
+          <p>Hello,</p>
+          <p>You requested a password reset. Please use the following One-Time Password (OTP) to proceed:</p>
+          <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333;">
+            ${otp}
+          </div>
+          <p>This code is valid for <b>5 minutes</b>. If you did not request this, please ignore this email.</p>
+          <hr style="border: none; border-top: 1px solid #eee;" />
+          <p style="font-size: 12px; color: #888; text-align: center;">Hostel Hungry Delivery Service</p>
+        </div>
+      `
     });
 
-    console.log("Password reset OTP email sent to:", to);
+    console.log("Password Reset OTP sent successfully to:", to);
   } catch (error) {
-    console.error("Email OTP Error:", error.message);
+    console.error("Password Reset Email OTP Error:", error.message);
     throw error;
   }
 };
 
 /* =======================
-   SMS (Delivery OTP)
+   DELIVERY OTP EMAIL
    ======================= */
-
-export const sendDeliveryOtpSms = async (user, otp) => {
+export const sendDeliveryOtpMail = async (user, otp) => {
   try {
-    const phone = user.phone; // MUST be 10 digit number
+    const transporter = getTransporter();
 
-    if (!phone) {
-      throw new Error("User phone number missing");
-    }
+    await transporter.sendMail({
+      from: `"Hostel Hungry" <${process.env.EMAIL}>`,
+      to: user.email,
+      subject: "Delivery OTP - Hostel Hungry",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
+          <h2 style="color: #ff4d2d;">Delivery Confirmation</h2>
+          <p>Your OTP for delivery is: <b style="font-size: 20px;">${otp}</b></p>
+          <p>Please share this only with the delivery partner once you receive your order.</p>
+          <p>This OTP is valid for <b>5 minutes</b>.</p>
+        </div>
+      `
+    });
 
-    const response = await axios.post(
-      "https://www.fast2sms.com/dev/bulkV2",
-      {
-        route: "otp",
-        variables_values: otp,
-        numbers: phone,
-      },
-      {
-        headers: {
-          authorization: process.env.FAST2SMS_API_KEY,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    console.log("DELIVERY OTP SMS SENT:", response.data);
+    console.log("Delivery OTP sent successfully to:", user.email);
   } catch (error) {
-    console.error(
-      "Delivery SMS Error:",
-      error.response?.data || error.message
-    );
+    console.error("Delivery Mail Error:", error.message);
     throw error;
   }
 };
