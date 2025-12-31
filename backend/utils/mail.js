@@ -1,82 +1,82 @@
-import nodemailer from "nodemailer";
+import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
-// Function to create the transporter (Brevo SMTP)
-const getTransporter = () => {
-  return nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false, // Port 587 uses STARTTLS
-    auth: {
-      user: process.env.EMAIL, // Your verified Brevo sender email
-      pass: process.env.PASS,  // Your Brevo SMTP Key
-    },
-    connectionTimeout: 10000,
-  });
-};
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
 
-/* =======================
-   PASSWORD RESET OTP EMAIL
-   ======================= */
 export const sendOtpMail = async (to, otp) => {
   try {
-    const transporter = getTransporter();
-
-    await transporter.sendMail({
-      from: `"Hostel Hungry" <${process.env.EMAIL}>`,
-      to,
-      subject: "Reset Your Password - Hostel Hungry",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px;">
-          <h2 style="color: #ff4d2d; text-align: center;">Hostel Hungry</h2>
-          <p>Hello,</p>
-          <p>You requested a password reset. Please use the following One-Time Password (OTP) to proceed:</p>
-          <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333;">
-            ${otp}
+    const response = await axios.post(
+      BREVO_API_URL,
+      {
+        sender: { email: process.env.EMAIL_SENDER, name: "Hostel Hungry" },
+        to: [{ email: to }],
+        subject: "Reset Your Password - Hostel Hungry",
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd;">
+            <h2 style="color: #ff4d2d; text-align: center;">Hostel Hungry</h2>
+            <p>Hello,</p>
+            <p>Your OTP for password reset is:</p>
+            <div style="font-size: 24px; font-weight: bold; text-align:center; padding: 10px; background:#f4f4f4;">
+              ${otp}
+            </div>
+            <p>Valid for 5 minutes.</p>
           </div>
-          <p>This code is valid for <b>5 minutes</b>. If you did not request this, please ignore this email.</p>
-          <hr style="border: none; border-top: 1px solid #eee;" />
-          <p style="font-size: 12px; color: #888; text-align: center;">Hostel Hungry Delivery Service</p>
-        </div>
-      `
-    });
+        `,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json",
+          accept: "application/json",
+        },
+      }
+    );
 
-    console.log("Password Reset OTP sent successfully to:", to);
+    console.log("Password reset OTP sent via Brevo API:", to);
+    return true;
   } catch (error) {
-    console.error("Password Reset Email OTP Error:", error.message);
+    console.error("Brevo API Email Error:", error.response?.data || error.message);
     throw error;
   }
 };
 
-/* =======================
-   DELIVERY OTP EMAIL
-   ======================= */
 export const sendDeliveryOtpMail = async (user, otp) => {
   try {
-    const transporter = getTransporter();
+    const response = await axios.post(
+      BREVO_API_URL,
+      {
+        sender: { email: process.env.EMAIL_SENDER, name: "Hostel Hungry" },
+        to: [{ email: user.email }],
+        subject: "Delivery OTP - Hostel Hungry",
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd;">
+            <h2 style="color: #ff4d2d;">Delivery OTP</h2>
+            <p>Hello ${user.fullName},</p>
+            <p>Your OTP for delivery is:</p>
+            <div style="font-size: 24px; font-weight: bold; text-align:center; padding: 10px; background:#f4f4f4;">
+              ${otp}
+            </div>
+            <p>Valid for 5 minutes.</p>
+          </div>
+        `,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json",
+          accept: "application/json",
+        },
+      }
+    );
 
-    await transporter.sendMail({
-      from: `"Hostel Hungry" <${process.env.EMAIL}>`,
-      to: user.email,
-      subject: "Delivery OTP - Hostel Hungry",
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
-          <h2 style="color: #ff4d2d;">Delivery Confirmation</h2>
-          <p>Your OTP for delivery is: <b style="font-size: 20px;">${otp}</b></p>
-          <p>Please share this only with the delivery partner once you receive your order.</p>
-          <p>This OTP is valid for <b>5 minutes</b>.</p>
-        </div>
-      `
-    });
-
-    console.log("Delivery OTP sent successfully to:", user.email);
+    console.log("Delivery OTP sent via Brevo API:", user.email);
+    return true;
   } catch (error) {
-    console.error("Delivery Mail Error:", error.message);
+    console.error("Brevo API Delivery Email Error:", error.response?.data || error.message);
     throw error;
   }
 };
-
 
 
 
