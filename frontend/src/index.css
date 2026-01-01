@@ -11,17 +11,11 @@
   display: none; /* Chrome, Safari, Opera */
 }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-    "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont,
+    "SF Pro Display", "SF Pro Text",
+    "Helvetica Neue", Helvetica, Arial, sans-serif;
   background-color: #ffffff;
 }
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont,
-    "SF Pro Text", "SF Pro Display",
-    "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
 
 @keyframes fadeUp {
   from {
